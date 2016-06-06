@@ -1,6 +1,6 @@
-# CloudBot
+# AetherBot //CloudBot Fork
 
-CloudBot is a simple, fast, expandable open-source Python IRC Bot!
+AetherBot is a clone of CloudBot fixing depreciated api's, adding a variety of plugins, and merging some uguu plugins as well as its database. If you use any of my fixes or code, PLEASE CREDIT ME.
 
 ## Getting CloudBot
 
