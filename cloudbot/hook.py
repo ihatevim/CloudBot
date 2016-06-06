@@ -339,3 +339,7 @@ def on_start(param=None, **kwargs):
 
 # this is temporary, to ease transition
 onload = on_start
+
+def singlethread(func):
+    func._thread = True
+    return func

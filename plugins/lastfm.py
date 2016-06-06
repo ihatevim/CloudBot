@@ -79,36 +79,49 @@ def lastfm(text, nick, db, bot, notice):
     tracks = response["recenttracks"]["track"]
 
     if type(tracks) == list:
-        # if the user is listening to something, the tracks entry is a list
-        # the first item is the current track
         track = tracks[0]
-        status = 'is listening to'
-        ending = '.'
-    elif type(tracks) == dict:
-        # otherwise, they aren't listening to anything right now, and
-        # the tracks entry is a dict representing the most recent track
-        track = tracks
-        status = 'last listened to'
-        # lets see how long ago they listened to it
-        time_listened = datetime.fromtimestamp(int(track["date"]["uts"]))
-        time_since = timeformat.time_since(time_listened)
-        ending = ' ({} ago)'.format(time_since)
-
+        
+        if "@attr" in track and "nowplaying" in track["@attr"] and track["@attr"]["nowplaying"] == "true":
+            # if the user is listening to something, the first track (a dict) of the
+            # tracks list will contain an item with the "@attr" key.
+            # this item will will contain another item with the "nowplaying" key
+            # which value will be "true"
+            status = 'is listening to'
+            ending = '.'
+        else:
+            # otherwise, the user is not listening to anything right now
+            status = 'last listened to'
+            # lets see how long ago they listened to it
+            time_listened = datetime.fromtimestamp(int(track["date"]["uts"]))
+            time_since = timeformat.time_since(time_listened)
+            ending = ' ({} ago)'.format(time_since)
     else:
         return "error: could not parse track listing"
 
     title = track["name"]
     album = track["album"]["#text"]
     artist = track["artist"]["#text"]
-    url = web.try_shorten(track["url"])
+    try:
+        url = web.try_shorten(track["url"])
+    except:
+        url = track["url"]
+        pass
+    tags = getartisttags(artist, bot)
+    playcount = getusertrackplaycount(artist, title, user, bot)
 
     out = '{} {} "{}"'.format(user, status, title)
     if artist:
         out += " by \x02{}\x0f".format(artist)
     if album:
         out += " from the album \x02{}\x0f".format(album)
+    if playcount:
+        out += " [playcount: {}]".format(playcount)
+    else:
+        out += " [playcount: 0]"
     if url:
         out += " {}".format(url)
+
+    out += " ({})".format(tags)
 
     # append ending based on what type it was
     out += ending
@@ -120,6 +133,106 @@ def lastfm(text, nick, db, bot, notice):
         load_cache(db)
     return out
 
+# get tags for $artist
+def getartisttags(artist, bot):
+    tag_list = []
+    api_key = bot.config.get("api_keys", {}).get("lastfm")
+    params = { 'method': 'artist.getTopTags', 'api_key': api_key, 'artist': artist,
+            'autocorrect': '1'}
+    request = requests.get(api_url, params = params)
+    tags = request.json()
+
+    if 'tag' in tags['toptags']:
+        for item in tags['toptags']['tag']:
+            try:
+                if not item['name'] == "seen live":
+                    tag_list.append(item['name'])
+                else:
+                    pass
+            except KeyError:
+                pass
+
+    tag_list = tag_list[0:4]
+
+    return ', '.join(tag_list) if tag_list else 'no tags'
+
+def getsimilarartists(artist, bot):
+    artist_list = []
+    api_key = bot.config.get('api_keys', {}).get('lastfm')
+    params = { 'method': 'artist.getsimilar', 'api_key': api_key,
+            'artist': artist, 'autocorrect': '1' }
+    request = requests.get(api_url, params = params)
+    similar = request.json()
+
+    # check it's a list
+    if isinstance(similar['similarartists']['artist'], list):
+        for item in similar['similarartists']['artist']:
+            artist_list.append(item['name'])
+
+    artist_list = artist_list[0:4]
+
+    return ', '.join(artist_list) if artist_list else 'no similar artists'
+
+def getusertrackplaycount(artist, track, user, bot):
+    api_key = bot.config.get("api_keys", {}).get("lastfm")
+    params = { 'method': 'track.getInfo', 'api_key': api_key, 'artist': artist,
+            'track': track, 'username': user }
+    request = requests.get(api_url, params = params)
+    track_info = request.json()
+
+    return track_info['track'].get('userplaycount')
+
+@hook.command("plays")
+def getuserartistplaycount(text, nick, bot, notice):
+    """[artist] - displays the current user's playcount for [artist]. You must have your username saved."""
+    user = get_account(nick)
+    if not user:
+        notice(getuserartistplaycount.__doc__)
+        return
+
+    artist_info = getartistinfo(text, bot, user)
+
+    if 'error' in artist_info:
+        return 'No such artist.'
+
+    if 'userplaycount' not in artist_info['artist']['stats']:
+        return '"{}" has never listened to {}.'.format(user, text)
+
+    playcount = artist_info['artist']['stats']['userplaycount']
+
+    out = '"{}" has {:,} {} plays.'.format(user, int(playcount), text)
+
+    return out
+
+@hook.command("band", "la")
+def displaybandinfo(text, nick, bot, notice):
+    """[artist] - displays information about [artist]."""
+    if not text:
+        notice(getbandinfo.__doc__)
+    artist = getartistinfo(text, bot)
+
+    if 'error' in artist:
+        return 'No such artist.'
+
+    a = artist['artist']
+    similar = getsimilarartists(text, bot)
+    tags = getartisttags(text, bot)
+
+    out = "{} have {:,} plays and {:,} listeners.".format(text, int(a['stats']['playcount']),
+            int(a['stats']['listeners']))
+    out += " Similar artists include {}. Tags: ({}).".format(similar, tags)
+
+    return out
+
+def getartistinfo(artist, bot, user = ''):
+    api_key = bot.config.get('api_keys', {}).get('lastfm')
+    params = { 'method': 'artist.getInfo', 'artist': artist, 'api_key': api_key,
+            'autocorrect': '1'}
+    if user:
+        params['username'] = user
+    request = requests.get(api_url, params = params);
+    artist = request.json()
+    return artist
 
 @hook.command("lastfmcompare", "compare", "lc")
 def lastfmcompare(text, nick, bot,):
@@ -213,8 +326,8 @@ def toptrack(text, nick, bot):
     for r in range(5):
         track_name = data["toptracks"]["track"][r]["name"]
         artist_name = data["toptracks"]["track"][r]["artist"]["name"]
-        play_count = data["toptracks"]["track"][r]["playcount"] 
-        out = out + "{} by {} listened to {} times. ".format(track_name, artist_name, play_count)
+        play_count = data["toptracks"]["track"][r]["playcount"]
+        out = out + "{} by {} listened to {:,} times. ".format(track_name, artist_name, int(play_count))
     return out
 
 
@@ -252,5 +365,64 @@ def topartists(text, nick, bot):
     for r in range(5):
         artist_name = data["topartists"]["artist"][r]["name"]
         play_count = data["topartists"]["artist"][r]["playcount"]
-        out = out + "{} listened to {} times. ".format(artist_name, play_count)
+        out = out + "{} listened to {:,} times. ".format(artist_name, int(play_count))
+    return out
+
+@hook.command("ltw", "topweek", autohelp=False)
+def topweek(text, nick, db, bot, notice):
+    """Grabs a list of the top artists in the last week for a last.fm username. You can set your lastfm username with .l username"""
+    topweek = topartists(text, nick, db, bot, notice, '7day')
+    return topweek
+
+@hook.command("ltm", "topmonth", autohelp=False)
+def topmonth(text, nick, db, bot, notice):
+    """Grabs a list of the top artists in the last month for a last.fm username. You can set your lastfm username with .l username"""
+    topmonth = topartists(text, nick, db, bot, notice, '1month')
+    return topmonth
+
+@hook.command("lta", "topall", autohelp=False)
+def topall(text, nick, db, bot, notice):
+    """Grabs a list of the top artists in the last year for a last.fm username. You can set your lastfm username with .l username"""
+    topall = topartists(text, nick, db, bot, notice, '1year')
+    return topall
+
+def topartists(text, nick, db, bot, notice, period):
+    api_key = bot.config.get("api_keys", {}).get("lastfm")
+    if not api_key:
+        return "error: no api key set"
+
+    if text:
+        username = get_account(text)
+        if not username:
+            username = text
+    else:
+        username = get_account(nick)
+    if not username:
+        return("No last.fm username specified and no last.fm username is set in the database.")
+    params = {
+        'api_key': api_key,
+        'method': 'user.gettopartists',
+        'user': username,
+        'period': period,
+        'limit': 10
+    }
+    request = requests.get(api_url, params=params)
+
+    if request.status_code != requests.codes.ok:
+        return "Failed to fetch info ({})".format(request.status_code)
+
+    data = request.json()
+    if 'error' in data:
+        return "Error: {}.".format(data["message"])
+
+    if len(data["topartists"]["artist"]) < 10:
+        range_count = len(data["topartists"]["artist"])
+    else:
+        range_count = 10
+
+    out = "{}'s favorite artists: ".format(username)
+    for r in range(range_count):
+        artist_name = data["topartists"]["artist"][r]["name"]
+        play_count = data["topartists"]["artist"][r]["playcount"]
+        out = out + "{} [{:,}] ".format(artist_name, int(play_count))
     return out

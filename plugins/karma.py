@@ -1,127 +1,185 @@
-import time
 import re
+import operator
 
-from sqlalchemy import Table, Column, Integer, String, PrimaryKeyConstraint
-from sqlalchemy import select
-
+from collections import defaultdict
 from cloudbot import hook
-from cloudbot.util import timeformat, database
+from cloudbot.event import EventType
+
+karmaplus_re = re.compile('^.*\+\+$')
+karmaminus_re = re.compile('^.*\-\-$')
+db_ready = []
+
+def db_init(db, conn_name):
+    """Check to see if the DB has the herald table. Connection name is for caching the result per connection.
+    :type db: sqlalchemy.orm.Session
+    """
+    global db_ready
+    if db_ready.count(conn_name) < 1:
+        db.execute("create table if not exists karma(name, chan, thing, score INTEGER, primary key(name, chan, thing))")
+        db.commit()
+        db_ready.append(conn_name)
 
 
-CAN_DOWNVOTE = False
-TIME_LIMIT = 300.0
-
-
-karma_table = Table(
-    'karma',
-    database.metadata,
-    Column('nick_vote', String(25)),
-    Column('up_karma', Integer, default=0),
-    Column('down_karma', Integer, default=0),
-    Column('total_karma', Integer, default=0),  # used for querying
-    PrimaryKeyConstraint('nick_vote')
-)
-
-voters = {}
-
-
-def up(db, nick_vote):
-    """ gives one karma to a user """
-    db.execute("""INSERT or IGNORE INTO karma(
-        nick_vote,
-        up_karma,
-        down_karma,
-        total_karma) values(:nick,0,0,0)""", {'nick': nick_vote.lower()})
-    query = karma_table.update().values(
-        up_karma=karma_table.c.up_karma + 1,
-        total_karma=karma_table.c.total_karma + 1
-    ).where(karma_table.c.nick_vote == nick_vote.lower())
-    db.execute(query)
-    db.commit()
-
-
-def down(db, nick_vote):
-    """ takes one karma away from a user """
-    db.execute("""INSERT or IGNORE INTO karma(
-        nick_vote,
-        up_karma,
-        down_karma,
-        total_karma) values(:nick,0,0,0)""", {'nick': nick_vote.lower()})
-    query = karma_table.update().values(
-        down_karma=karma_table.c.down_karma + 1,
-        total_karma=karma_table.c.total_karma - 1
-    ).where(karma_table.c.nick_vote == nick_vote.lower())
-    db.execute(query)
-    db.commit()
-
-
-def allowed(uid):
-    """ checks if a user is allowed to vote, and keeps track of voters """
-    global voters
-
-    # clear expired voters
-    for _uid, _timestamp in voters.items():
-        if (time.time() - _timestamp) >= TIME_LIMIT:
-            del voters[_uid]
-
-    if uid in voters:
-        last_voted = voters[uid]
-        return False, timeformat.time_until(last_voted, now=time.time() - TIME_LIMIT)
+@hook.command("pp", "addpoint")
+def addpoint(text, nick, chan, db, conn):
+    """.addpoint or (.pp) <thing> adds a point to the <thing>"""
+    text = text.strip()
+    db_init(db, conn.name)
+    karma = db.execute("select score from karma where name = :name and chan = :chan and thing = :thing", {'name':nick, 'chan': chan, 'thing': text.lower()}).fetchone()
+    if karma:
+        score = int(karma[0])
+        score = score + 1
+        db.execute("insert or replace into karma(name, chan, thing, score) values (:name, :chan, :thing, :score)", {'name': nick, 'chan': chan, 'thing': text.lower(), 'score': score})
+        db.commit()
+        # return "{} is now worth {} in {}'s eyes.".format(text, score, nick)
     else:
-        voters[uid] = time.time()
-        return True, 0
+        db.execute("insert or replace into karma(name, chan, thing, score) values (:name, :chan, :thing, :score)", {'name': nick, 'chan': chan, 'thing': text.lower(), 'score': 1})
+        db.commit()
+        #return "{} is now worth 1 in {}'s eyes.".format(text, nick)
 
-
-karma_re = re.compile('^([a-z0-9_\-\[\]\\^{}|`]{3,})(\+\+|\-\-)$', re.I)
-
-
-@hook.regex(karma_re)
-def karma_add(match, nick, conn, db, notice):
-    nick_vote = match.group(1).strip()
-    if nick.lower() == nick_vote.lower():
-        notice("You can't vote on yourself!")
-        return
-
-    uid = ":".join([conn.name, nick, nick_vote]).lower()
-    vote_allowed, when = allowed(uid)
-
-    if vote_allowed:
-        if match.group(2) == '++':
-            up(db, nick_vote)
-            notice("Gave {} 1 karma!".format(nick_vote))
-        if match.group(2) == '--' and CAN_DOWNVOTE:
-            down(db, nick_vote)
-            notice("Took away 1 karma from {}.".format(nick_vote))
-        else:
-            return
+@hook.regex(karmaplus_re)
+def re_addpt(match, nick, chan, db, conn, notice):
+    """no useful help txt"""
+    thing = match.group().split('++')[0]
+    if thing:
+        addpoint(thing, nick, chan, db, conn)
+        #return out
     else:
-        notice("You are trying to vote too often. You can vote on this user again in {}!".format(when))
+        notice(pluspts(nick, chan, db, conn))
 
-
-@hook.command('karma', 'k')
-def karma(text, db):
-    """k/karma <nick> -- returns karma stats for <nick>"""
-    query = db.execute(
-        select([karma_table])
-        .where(karma_table.c.nick_vote == text.lower())
-    ).fetchone()
-
-    if not query:
-        return "That user has no karma :("
+@hook.command("mm", "rmpoint")
+def rmpoint(text, nick, chan, db, conn):
+    """.rmpoint or (.mm) <thing> subtracts a point from the <thing>"""
+    text = text.strip()
+    db_init(db, conn.name)
+    karma = db.execute("select score from karma where name = :name and chan = :chan and thing = :thing", {'name':nick, 'chan': chan, 'thing': text.lower()}).fetchone()
+    if karma:
+        score = int(karma[0])
+        score = score - 1
+        db.execute("insert or replace into karma(name, chan, thing, score) values (:name, :chan, :thing, :score)", {'name': nick, 'chan': chan, 'thing': text.lower(), 'score': score})
+        db.commit()
+        #return "{} is now worth {} in {}'s eyes.".format(text, score, nick)
     else:
-        return "{} has \x02{}\x02 karma!".format(text, query['up_karma'] - query['down_karma'])
+        db.execute("insert or replace into karma(name, chan, thing, score) values (:name, :chan, :thing, :score)", {'name': nick, 'chan': chan, 'thing': text.lower(), 'score': -1})
+        db.commit()
+        #return "{} is now worth -1 in {}'s eyes.".format(text, nick)
 
 
-@hook.command('loved')
-def loved(db):
-    """loved -- Shows the users with the most karma!"""
-    query = db.execute(
-        select([karma_table])
-        .order_by(karma_table.c.total_karma.desc())
-        .limit(5)
-    ).fetchall()
+@hook.command("pluspts", autohelp=False)
+def pluspts(nick, chan, db, conn):
+    """prints the things you have liked"""
+    db_init(db, conn.name)
+    output = ""
+    likes = db.execute("select thing, score from karma where name = :name and chan = :chan and score >= 0 order by score desc", { 'name': nick, 'chan': chan }).fetchall()
+    for like in likes:
+       output = output + str(like[0]) + " has " + str(like[1]) + " points "
+    return output
 
-    if not query:
-        return "??"
+@hook.command("minuspts", autohelp=False)
+def minuspts(nick, chan, db, conn):
+    """prints the things you have liked"""
+    db_init(db, conn.name)
+    output = ""
+    likes = db.execute("select thing, score from karma where name = :name and chan = :chan and score <= 0 order by score", { 'name': nick, 'chan': chan }).fetchall()
+    for like in likes:
+       output = output + str(like[0]) + " has " + str(like[1]) + " points "
+    return output
+
+@hook.regex(karmaminus_re)
+def re_rmpt(match, nick, chan, db, conn, notice):
+    """no useful help txt"""
+    thing = match.group().split('--')[0]
+    if thing:
+        rmpoint(thing, nick, chan, db, conn)
+        #return out
     else:
-        return query
+        notice(minuspts(nick, chan, db, conn))
+
+
+@hook.command("points", autohelp=False)
+def points(text, chan, db, conn):
+    """.points <thing> will print the total points for <thing> in the channel."""
+    db_init(db, conn.name)
+    score = 0
+    karma = ""
+    thing = ""
+    if text.endswith("-global"):
+        thing = text[:-7].strip()
+        karma = db.execute("select score from karma where thing = :thing", {'thing': thing.lower()}).fetchall()
+    else:
+        text = text.strip()
+        karma = db.execute("select score from karma where thing = :thing and chan = :chan", {'thing': text.lower(), 'chan': chan }).fetchall()
+    if karma:
+        pos = 0
+        neg = 0
+        for k in karma:
+            if int(k[0]) < 0:
+                neg += int(k[0])
+            else:
+                pos += int(k[0])
+            score += int(k[0])
+        if thing:
+             return "{} has a total score of {} (+{}/{}) across all channels I know about.".format(thing, score, pos, neg)
+        return "{} has a total score of {} (+{}/{}) in {}.".format(text, score, pos, neg, chan)
+    else:
+        return "I couldn't find {} in the database.".format(text)
+
+@hook.command("topten", "pointstop", "loved", autohelp=False)
+def pointstop(text, chan, db, message, conn, notice):
+    """.topten or .pointstop prints the top 10 things with the highest points in the channel. To see the top 10 items in all of the channels the bot sits in use .topten global."""
+    db_init(db, conn.name)
+    scores = []
+    points = defaultdict(int)
+    items = ""
+    out = ""
+    if text == "global":
+        items = db.execute("select thing, score from karma").fetchall()
+        out = "The top {} favorite things in all channels are: "
+    else:
+        items = db.execute("select thing, score from karma where chan = :chan", {'chan':chan}).fetchall()
+        out = "The top {} favorite things in {} are: "
+    if items:
+        for item in items:
+            thing = item[0]
+            score = int(item[1])
+            points[thing] += score
+        scores = points.items()
+        sorts = sorted(scores, key=operator.itemgetter(1), reverse = True)
+        ten = str(len(sorts))
+        if int(ten) > 10:
+            ten = "10"
+        out = out.format(ten, chan)
+        for i in range(0,int(ten)):
+            out += "{} with {} points \u2022 ".format(sorts[i][0], sorts[i][1])
+        out = out[:-2]
+        return out
+
+@hook.command("bottomten", "pointsbottom", "hated", autohelp=False)
+def pointsbottom(text, chan, db, message, conn, notice):
+    """.bottomten or .pointsbottom prints the top 10 things with the highest points in the channel. To see the top 10 items in all of the channels the bot sits in use .topten global."""
+    db_init(db, conn.name)
+    scores = []
+    points = defaultdict(int)
+    items = ""
+    out = ""
+    if text == "global":
+        items = db.execute("select thing, score from karma").fetchall()
+        out = "The {} most hated things in all channels are: "
+    else:
+        items = db.execute("select thing, score from karma where chan = :chan", {'chan':chan}).fetchall()
+        out = "The {} most hated things in {} are: "
+    if items:
+        for item in items:
+            thing = item[0]
+            score = int(item[1])
+            points[thing] += score
+        scores = points.items()
+        sorts = sorted(scores, key=operator.itemgetter(1))
+        ten = str(len(sorts))
+        if int(ten) > 10:
+            ten = "10"
+        out = out.format(ten, chan)
+        for i in range(0,int(ten)):
+            out += "{} with {} points \u2022 ".format(sorts[i][0], sorts[i][1])
+        out = out[:-2]
+        return out

@@ -1,7 +1,6 @@
 import requests
-
 from cloudbot import hook
-from cloudbot.util import web
+from cloudbot.util import web, database
 
 
 class APIError(Exception):
@@ -55,26 +54,41 @@ def find_location(location):
 
     return json['results'][0]['geometry']['location']
 
-
 @hook.on_start
-def on_start(bot):
+def on_start(bot, db):
     """ Loads API keys """
     global dev_key, wunder_key
     dev_key = bot.config.get("api_keys", {}).get("google_dev_key", None)
     wunder_key = bot.config.get("api_keys", {}).get("wunderground", None)
 
 
-@hook.command("weather", "we")
-def weather(text, reply):
+@hook.command("weather", "we", "w", autohelp=False)
+def weather(text, reply, db, nick, notice):
     """weather <location> -- Gets weather data for <location>."""
     if not wunder_key:
         return "This command requires a Weather Underground API key."
     if not dev_key:
         return "This command requires a Google Developers Console API key."
-
+    save = True
+    location = ""
+    # If no input try the db
+    if not text:
+        location = database.get(db,'users','location','nick',nick)
+        if not location:
+            notice(weather.__doc__)
+            return
+    elif '@' in text:
+        save = False
+        nick = text.split('@')[1].strip()
+        location = database.get(db,'users','location','nick',nick)
+        if not location:
+            notice("No location stored for user")
+            return
+    else:
+        location = text
     # use find_location to get location data from the user input
     try:
-        location_data = find_location(text)
+        location_data = find_location(location)
     except APIError as e:
         return e
 
@@ -113,12 +127,22 @@ def weather(text, reply):
 
     # Get the more accurate URL if available, if not, get the generic one.
     if "?query=," in response["current_observation"]['ob_url']:
-        weather_data['url'] = web.shorten(response["current_observation"]['forecast_url'])
+        try:
+            weather_data['url'] = web.try_shorten(response["current_observation"]['forecast_url'])
+        except:
+            weather_data['url'] = response["current_observation"]["forcast_url"]
+            pass
     else:
-        weather_data['url'] = web.shorten(response["current_observation"]['ob_url'])
+        try:
+            weather_data['url'] = web.try_shorten(response["current_observation"]['ob_url'])
+        except:
+            weather_data['url'] = response["current_observation"]["ob_url"]
+            pass
 
     reply("{place} - \x02Current:\x02 {conditions}, {temp_f}F/{temp_c}C, {humidity}, "
           "Wind: {wind_mph}MPH/{wind_kph}KPH {wind_direction}, \x02Today:\x02 {today_conditions}, "
           "High: {today_high_f}F/{today_high_c}C, Low: {today_low_f}F/{today_low_c}C. "
           "\x02Tomorrow:\x02 {tomorrow_conditions}, High: {tomorrow_high_f}F/{tomorrow_high_c}C, "
           "Low: {tomorrow_low_f}F/{tomorrow_low_c}C - {url}".format(**weather_data))
+    if text and save:
+        database.set(db,'users','location',text,'nick',nick)

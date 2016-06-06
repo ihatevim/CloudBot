@@ -1,7 +1,10 @@
 import requests
 import time
-
+import datetime
+import re
+from cloudbot.util import database
 from cloudbot import hook
+
 
 # Define some constants
 base_url = 'https://maps.googleapis.com/maps/api/'
@@ -32,22 +35,55 @@ def check_status(status, api):
         # !!!
         return 'Unknown Demons.'
 
-
 @hook.on_start
-def load_key(bot):
+def load_key(bot, db):
     """ Loads the API key for Google APIs """
     global dev_key
     dev_key = bot.config.get("api_keys", {}).get("google_dev_key", None)
 
-
-@hook.command("time")
-def time_command(text):
+@hook.command("time", "t", autohelp=False)
+def time_command(text, nick, db, reply, notice):
     """<location> -- Gets the current time in <location>."""
     if not dev_key:
         return "This command requires a Google Developers Console API key."
-
+    # If no input try the db
+    save = True
+    if not text:
+        location = database.get(db,'users','location','nick',nick)
+        print (location)
+        if not location:
+            notice("I have no location stored for you.")
+            return
+    elif '@' in text:
+        save = False
+        nick = text.split('@')[1].strip()
+        location = database.get(db,'users','location','nick',nick)
+        if not location:
+            notice("No location stored for user")
+            return
+    else:
+        location = text
+        loc = location
+    if text.lower().startswith("utc") or text.lower().startswith("gmt"):
+        timezone = text.strip()
+        pattern = re.compile(r"utc|gmt|[:+]")
+        utcoffset = [x for x in pattern.split(text.lower()) if x]
+        if len(utcoffset) > 2:
+           return "Please specify a valid UTC/GMT format Example: UTC-4, UTC+7 GMT7"
+        if len(utcoffset) == 1:
+           utcoffset.append('0')
+        if len(utcoffset) == 2:
+           try:
+               offset = datetime.timedelta(hours=int(utcoffset[0]), minutes=int(utcoffset[1]))
+           except:
+               return "Sorry I could not parse the UTC format you entered. Example UTC7 or UTC-4"
+           curtime = datetime.datetime.utcnow()
+           tztime = curtime + offset
+           formatted_time = datetime.datetime.strftime(tztime, '%I:%M %p, %A, %B %d, %Y')
+           return "\x02{}\x02 ({})".format(formatted_time, timezone)
+           
     # Use the Geocoding API to get co-ordinates from the input
-    params = {"address": text, "key": dev_key}
+    params = {"address": location, "key": dev_key}
     if bias:
         params['region'] = bias
 
@@ -83,7 +119,8 @@ def time_command(text):
     formatted_time = time.strftime('%I:%M %p, %A, %B %d, %Y', raw_time)
 
     timezone = json['timeZoneName']
-
+    if text and save:
+        database.set(db,'users','location',loc,'nick',nick)
     return "\x02{}\x02 - {} ({})".format(formatted_time, location_name, timezone)
 
 

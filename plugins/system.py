@@ -17,11 +17,10 @@ import cloudbot
 def about(text, conn):
     """-- Gives information about CloudBot. Use .about license for licensing information"""
     if text.lower() in ("license", "gpl", "source"):
-        return "CloudBot Refresh is released under the GPL v3 license, get the source code " \
-               "at https://github.com/CloudBotIRC/CloudBot/"
+        return ">license lolok"
 
-    return "{} is powered by CloudBot Refresh! ({}) - " \
-           "https://github.com/CloudBotIRC/CloudBot/".format(conn.nick, cloudbot.__version__)
+    return "{} is powered by hatred! ({}) - " \
+           "look at my uguu fork instead https://github.com/ihatevim/spotbot".format(conn.nick, cloudbot.__version__)
 
 
 @hook.command(autohelp=False)
@@ -51,9 +50,9 @@ def system(reply, message):
         process = psutil.Process(os.getpid())
 
         # get the data we need using the Process we got
-        cpu_usage = process.get_cpu_percent()
-        thread_count = process.get_num_threads()
-        memory_usage = format_bytes(process.get_memory_info()[0])
+        cpu_usage = process.cpu_percent()
+        thread_count = process.num_threads()
+        memory_usage = format_bytes(process.memory_info()[0])
         uptime = timedelta(seconds=round(time.time() - process.create_time()))
 
         message(

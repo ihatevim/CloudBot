@@ -6,7 +6,7 @@ from cloudbot import hook
 socket.setdefaulttimeout(10)
 
 
-# Auto-join on Invite (Configurable, defaults to True)
+# Auto-join on Invite (Configurable, defaults to False)
 @asyncio.coroutine
 @hook.irc_raw('INVITE')
 def invite(irc_paramlist, conn):
@@ -14,10 +14,22 @@ def invite(irc_paramlist, conn):
     :type irc_paramlist: list[str]
     :type conn: cloudbot.client.Client
     """
-    invite_join = conn.config.get('invite_join', True)
+    invite_join = conn.config.get('invite_join', False)
     if invite_join:
+        mode = "mode {}".format(irc_paramlist[-1])
+        conn.send(mode)
         conn.join(irc_paramlist[-1])
 
+@hook.irc_raw('324')
+def check_mode(irc_paramlist, conn, message):
+    #message(", ".join(irc_paramlist), "bloodygonzo")
+    mode = irc_paramlist[2]
+    require_reg = conn.config.get('require_registered_channels', False)
+    if not "r" in mode and conn.name == "snoonet" and require_reg:
+        message("I do not stay in unregistered channels", irc_paramlist[1])
+        out = "PART {}".format(irc_paramlist[1])
+        conn.send(out)
+        
 
 # Identify to NickServ (or other service)
 @asyncio.coroutine
@@ -47,6 +59,13 @@ def onjoin(conn, bot):
                 bot.config['censored_strings'].append(nickserv_password)
             yield from asyncio.sleep(1)
 
+    # Should we oper up?
+    oper_pw = conn.config.get('oper_pw', False)
+    oper_user = conn.config.get('oper_user', False)
+    if oper_pw and oper_user:
+        out = "oper {} {}".format(oper_user, oper_pw)
+        conn.send(out)
+
     # Set bot modes
     mode = conn.config.get('mode')
     if mode:
@@ -58,6 +77,9 @@ def onjoin(conn, bot):
     for channel in conn.channels:
         conn.join(channel)
         yield from asyncio.sleep(0.4)
+        if conn.name == "snoonet":
+            mode = "mode {}".format(channel)
+            conn.send(mode)
 
     conn.ready = True
     bot.logger.info("[{}|misc] Bot has finished sending join commands for network.".format(conn.name))

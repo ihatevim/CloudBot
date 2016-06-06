@@ -18,7 +18,7 @@ random_url = api_prefix + "?action=query&format=xml&list=random&rnlimit=1&rnname
 paren_re = re.compile('\s*\(.*\)$')
 
 
-@hook.command("wiki", "wikipedia", "w")
+@hook.command("wiki", "wikipedia", "wi")
 def wiki(text):
     """wiki <phrase> -- Gets first sentence of Wikipedia article on <phrase>."""
 
@@ -55,4 +55,4 @@ def wiki(text):
     desc = ' '.join(desc.split())  # remove excess spaces
     desc = formatting.truncate(desc, 200)
 
-    return '{} :: {}'.format(desc, requests.utils.quote(url, ':/'))
+    return '{} :: {}'.format(desc, requests.utils.quote(url, ':/%'))
