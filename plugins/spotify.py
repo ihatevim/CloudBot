@@ -2,6 +2,7 @@ import re
 from cloudbot.util import http, web
 from cloudbot import hook
 from urllib.parse import urlencode
+#let me briefly explain why this is commented out...
 """
 def sptfy(text, sptfy=False):
     shortenurl = "http://sptfy.com/index.php"
