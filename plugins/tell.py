@@ -123,7 +123,7 @@ def tellinput(event, conn, db, nick, notice):
 
         read_tell(db, conn.name, nick, message)
         notice(reply)
-        update_user = "Hey {}, your message has been recieved.".format(user_from)
+        update_user = "Hey {}, your message has been received.".format(user_from)
         notice(update_user, target=user_from)
 
 
