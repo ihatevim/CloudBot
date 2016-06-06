@@ -78,6 +78,7 @@
         "wunderground": "",
         "rdio_key": "",
         "rdio_secret": "",
+		"genius_access_token": "",
         "google_dev_key": "",
         "google_cse_id": "",
         "octopart": "",
