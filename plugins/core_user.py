@@ -30,7 +30,7 @@ def battlestation(text, nick=None, conn=None, chan=None,db=None, notice=None):
 
     result = database.get(db,'users','battlestation','nick',nick)
     if result:
-        return '{}: {}'.format(nick,result)
+        return '{}'.format(result)
     else:
         if not '@' in text: notice(battlestation.__doc__)
         return 'No battlestation saved for {}.'.format(nick)
@@ -54,7 +54,7 @@ def desktop(text, nick=None, conn=None, chan=None,db=None, notice=None):
 
     result = database.get(db,'users','desktop','nick',nick)
     if result:
-        return '{}: {}'.format(nick,result)
+        return '{}'.format(result)
     else:
         if not '@' in text: notice(desktop.__doc__)
         return 'No desktop saved for {}.'.format(nick)
@@ -70,7 +70,7 @@ def greeting(text, nick=None, conn=None, chan=None,db=None, notice=None):
             if '@' in text: nick = text.split('@')[1].strip()
             result = database.get(db,'users','greeting','nick',nick)
             if result:
-                return '{}: {}'.format(nick,result)
+                return '{}'.format(result)
             else:
                 if not '@' in text: notice(greeting.__doc__)
                 return 'No greeting saved for {}.'.format(nick)
@@ -78,7 +78,7 @@ def greeting(text, nick=None, conn=None, chan=None,db=None, notice=None):
             database.set(db,'users','greeting','','nick',nick)
             notice("Deleted your greeting.")
         else:
-            database.set(db,'users','greeting','{} '.format(text.strip().replace("'","").encode('utf8')),'nick',nick)
+            database.set(db,'users','greeting','{} '.format(text.strip().replace("'","")),'nick',nick)
             notice("Saved your greeting.")
         return
     except: return "Uwaaahh~~?"
@@ -93,7 +93,7 @@ def waifu(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','waifu','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(waifu.__doc__)
             return 'No waifu saved for {}.'.format(nick)
@@ -101,7 +101,7 @@ def waifu(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','waifu','','nick',nick)
         notice("Deleted your waifu.")
     else:
-        database.set(db,'users','waifu','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','waifu','{} '.format(text.strip()),'nick',nick)
         notice("Saved your waifu.")
     return
 
@@ -113,7 +113,7 @@ def husbando(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','husbando','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(husbando.__doc__)
             return 'No husbando saved for {}.'.format(nick)
@@ -121,7 +121,7 @@ def husbando(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','husbando','','nick',nick)
         notice("Deleted your husbando.")
     else:
-        database.set(db,'users','husbando','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','husbando','{} '.format(text.strip()),'nick',nick)
         notice("Saved your husbando.")
     return
 
@@ -133,7 +133,7 @@ def imouto(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','imouto','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(imouto.__doc__)
             return 'No imouto saved for {}.'.format(nick)
@@ -141,7 +141,7 @@ def imouto(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','imouto','','nick',nick)
         notice("Deleted your imouto.")
     else:
-        database.set(db,'users','imouto','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','imouto','{} '.format(text.strip()),'nick',nick)
         notice("Saved your imouto.")
     return
 
@@ -153,7 +153,7 @@ def daughteru(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','daughteru','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(imouto.__doc__)
             return 'No daughteru saved for {}.'.format(nick)
@@ -161,7 +161,7 @@ def daughteru(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','daughteru','','nick',nick)
         notice("Deleted your daughteru.")
     else:
-        database.set(db,'users','daughteru','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','daughteru','{} '.format(text.strip()),'nick',nick)
         notice("Saved your daughteru.")
     return
 
@@ -175,7 +175,7 @@ def birthday(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','birthday','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(birthday.__doc__)
             return 'No birthday saved for {}.'.format(nick)
@@ -254,7 +254,7 @@ def snapchat(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','snapchat','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(snapchat.__doc__)
             return 'No snapchat saved for {}.'.format(nick)
@@ -262,7 +262,7 @@ def snapchat(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','snapchat','','nick',nick)
         notice("Deleted your snapchat.")
     else:
-        database.set(db,'users','snapchat','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','snapchat','{} '.format(text.strip()),'nick',nick)
         notice("Saved your snapchat.")
     return
 
@@ -275,7 +275,7 @@ def socialmedia(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','socialmedias','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(snapchat.__doc__)
             return 'No social medias saved for {}.'.format(nick)
@@ -283,7 +283,7 @@ def socialmedia(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','socialmedias','','nick',nick)
         notice("Deleted your social medias.")
     else:
-        database.set(db,'users','socialmedias','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','socialmedias','{} '.format(text.strip()),'nick',nick)
         notice("Saved your social medias.")
     return
 
@@ -303,7 +303,7 @@ def myanime(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','mal','','nick',nick)
         notice("Deleted your mal.")
     else:
-        database.set(db,'users','mal','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','mal','{} '.format(text.strip()),'nick',nick)
         notice("Saved your mal.")
     return
 
@@ -323,7 +323,7 @@ def mymanga(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','mal','','nick',nick)
         notice("Deleted your mal.")
     else:
-        database.set(db,'users','mal','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','mal','{} '.format(text.strip()),'nick',nick)
         notice("Saved your mal.")
     return
 
@@ -345,7 +345,7 @@ def selfie(text, nick=None, conn=None, chan=None,db=None, notice=None):
 
     result = database.get(db,'users','selfie','nick',nick)
     if result:
-        return '{}: {}'.format(nick,result)
+        return '{}'.format(result)
     else:
         if not '@' in text: notice(selfie.__doc__)
         return 'No selfie saved for {}.'.format(nick)
@@ -358,7 +358,7 @@ def steam(text, nick=None, conn=None, chan=None,db=None, notice=None):
         if '@' in text: nick = text.split('@')[1].strip()
         result = database.get(db,'users','steam','nick',nick)
         if result:
-            return '{}: {}'.format(nick,result)
+            return '{}'.format(result)
         else:
             if not '@' in text: notice(steam.__doc__)
             return 'No steam information saved for {}.'.format(nick)
@@ -366,7 +366,7 @@ def steam(text, nick=None, conn=None, chan=None,db=None, notice=None):
         database.set(db,'users','steam','','nick',nick)
         notice("Deleted your steam information.")
     else:
-        database.set(db,'users','steam','{} '.format(text.strip().encode('utf8')),'nick',nick)
+        database.set(db,'users','steam','{} '.format(text.strip()),'nick',nick)
         notice("Saved your steam information.")
     return
 
