@@ -14,7 +14,7 @@ table = Table(
     Column('connection', String(25)),
     Column('sender', String(25)),
     Column('target', String(25)),
-    Column('message', String(500)),
+    Column('msg', String(500)),
     Column('is_read', Boolean),
     Column('time_sent', DateTime),
     Column('time_read', DateTime)
@@ -34,7 +34,7 @@ def load_cache(db):
 
 
 def get_unread(db, server, target):
-    query = select([table.c.sender, table.c.message, table.c.time_sent]) \
+    query = select([table.c.sender, table.c.msg, table.c.time_sent]) \
         .where(table.c.connection == server.lower()) \
         .where(table.c.target == target.lower()) \
         .where(table.c.is_read == 0) \
@@ -62,23 +62,23 @@ def read_all_tells(db, server, target):
     db.commit()
     load_cache(db)
 
-def read_tell(db, server, target, message):
+def read_tell(db, server, target, msg):
     query = table.update() \
         .where(table.c.connection == server.lower()) \
         .where(table.c.target == target.lower()) \
-        .where(table.c.message == message) \
+        .where(table.c.msg == msg) \
         .values(is_read=1)
     db.execute(query)
     db.commit()
     load_cache(db)
 
 
-def add_tell(db, server, sender, target, message):
+def add_tell(db, server, sender, target, msg):
     query = table.insert().values(
         connection=server.lower(),
         sender=sender.lower(),
         target=target.lower(),
-        message=message,
+        msg=msg,
         is_read=False,
         time_sent=datetime.today()
     )
@@ -94,7 +94,7 @@ def tell_check(conn, nick):
             continue
 
 @hook.event(EventType.message, singlethread=True)
-def tellinput(event, conn, db, nick, notice):
+def tellinput(event, conn, db, nick, notice, message):
     """
     :type event: cloudbot.event.Event
     :type conn: cloudbot.client.Client
@@ -109,7 +109,7 @@ def tellinput(event, conn, db, nick, notice):
         return
 
     if tells:
-        user_from, message, time_sent = tells[0]
+        user_from, msg, time_sent = tells[0]
         reltime = timeformat.time_since(time_sent)
 
         if reltime == 0:
@@ -117,14 +117,14 @@ def tellinput(event, conn, db, nick, notice):
         else:
             reltime_formatted = reltime
 
-        reply = "{} sent you a message {} ago: {}".format(user_from, reltime_formatted, message)
+        reply = "{} sent you a message {} ago: {}".format(user_from, reltime_formatted, msg)
         if len(tells) > 1:
             reply += " (+{} more, {}showtells to view)".format(len(tells) - 1, conn.config["command_prefix"][0])
 
-        read_tell(db, conn.name, nick, message)
+        read_tell(db, conn.name, nick, msg)
         notice(reply)
         update_user = "Hey {}, your message has been received.".format(user_from)
-        notice(update_user, target=user_from)
+        message(update_user, target=user_from)
 
 
 @hook.command(autohelp=False)
@@ -138,9 +138,9 @@ def showtells(nick, notice, db, conn):
         return
 
     for tell in tells:
-        sender, message, time_sent = tell
+        sender, msg, time_sent = tell
         past = timeformat.time_since(time_sent)
-        notice("{} sent you a message {} ago: {}".format(sender, past, message))
+        notice("{} sent you a message {} ago: {}".format(sender, past, msg))
 
     read_all_tells(db, conn.name, nick)
 
@@ -149,15 +149,15 @@ def showtells(nick, notice, db, conn):
 def tell_cmd(text, nick, db, notice, conn):
     """tell <nick> <message> -- Relay <message> to <nick> when <nick> is around."""
     query = text.split(' ', 1)
-    if query[0].lower() == "paradox":
-        return "Paradox doesn't want to hear from me. Just send him a fucking message."
+    if query[0].lower() == "ihatevim":
+        return "ihatevim doesn't want to hear from me. Just send him a fucking message."
     if len(query) != 2:
         prefix = conn.config("command_prefix")
         notice(prefix[0] + tell_cmd.__doc__)
         return
 
     target = query[0].lower()
-    message = query[1].strip()
+    msg = query[1].strip()
     sender = nick
 
     if target == sender.lower():
@@ -177,5 +177,5 @@ def tell_cmd(text, nick, db, notice, conn):
         notice("Sorry, {} has too many messages queued already.".format(target))
         return
 
-    add_tell(db, conn.name, sender, target, message)
+    add_tell(db, conn.name, sender, target, msg)
     notice("Your message has been saved, and {} will be notified once they are active.".format(target))
