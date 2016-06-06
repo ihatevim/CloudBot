@@ -17,10 +17,11 @@ import cloudbot
 def about(text, conn):
     """-- Gives information about CloudBot. Use .about license for licensing information"""
     if text.lower() in ("license", "gpl", "source"):
-        return ">license lolok"
+        return "aetherBot Refresh is released under the GPL v3 license, get the source code " \
+               "at https://github.com/ihatevim/aetherbot"
 
     return "{} is powered by hatred! ({}) - " \
-           "look at my uguu fork instead https://github.com/ihatevim/spotbot".format(conn.nick, cloudbot.__version__)
+           "https://github.com/ihatevim/aetherbot is my current repo for this piece of crap".format(conn.nick, cloudbot.__version__)
 
 
 @hook.command(autohelp=False)
