@@ -170,7 +170,7 @@ def storyofpomfface(text, action=None):
 
 
 @hook.regex(r'^(same)$')
-def same(text):
+def same(nick=None):
     "same -- dont feel left out"
     if random.randint(1, 5) == 3: return 'butts'
     else: return 'same'
@@ -178,9 +178,8 @@ def same(text):
 
 @hook.regex(r'^(HUEHUEHUE)$')
 @hook.regex(r'^(huehuehue)$')
-def huehuehue(text):
-    "huehuehue -- huebaru?"
-    return text.group(0)
+def huehuehue(nick=None):
+    return "huehuehue -- huebaru?"
 
 
 @hook.regex(r'^(TETETE)$')
@@ -202,9 +201,9 @@ woahs = ([
 ])
 @hook.regex(r'.*([W|w]+[H|h]+[O|o]+[A|a]+).*')
 @hook.regex(r'.*([W|w]+[O|o]+[A|a]+[H|h]+).*')
-def woah(text, nick=None):
+def woah(nick=None):
     if random.randint(0, 4) == 0:
-        return woahs[random.randint(0, len(woahs) - 1)].replace('woah',text.group(1))
+        return woahs[random.randint(0, len(woahs) - 1)]
 
 
 @hook.regex(r'.*([L|l]+[I|i]+[N|n]+[U|u]+[X|x]).*')
