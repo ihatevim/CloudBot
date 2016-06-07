@@ -150,11 +150,11 @@ def penis(text, nick=None, triggered_command=None):
 
 
 @hook.command("anhero", "sudoku", autohelp=False)
-def sudoku(text, conn=None, chan=None, nick=None, say=None):
+def sudoku(text, conn=None, chan=None, nick=None, reply=None):
     "up -- Makes the bot kill you in [channel]. "\
     "If [channel] is blank the bot will op you in "\
     "the channel the command was used in."
-    say("Sayonara bonzai-chan...")
+    reply("Sayonara bonzai-chan...")
     conn.send("KICK {} {}".format(chan, nick)) 
     return
 
