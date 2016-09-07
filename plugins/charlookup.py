@@ -3,11 +3,6 @@ from cloudbot.util import http, web
 from cloudbot import hook
 from urllib.parse import urlencode
 
-global us
-us = 'us'
-global eu
-eu = 'eu'
-
 @hook.command
 def char(text, bot):
 	"""finds a toon and drops general information on them"""
@@ -28,9 +23,9 @@ def char(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
-		if location == us:
+		if location == 'us':
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=guild&locale=en_US&apikey={}".format(realm, name, api_key))
-		elif location == eu:
+		elif location == 'eu':
 			print("location is eu")
 			data = http.get_json("https://eu.api.battle.net/wow/character/{}/{}?fields=guild&locale=en_US&apikey={}".format(realm, name, api_key))
 		else:
@@ -56,8 +51,7 @@ def char(text, bot):
 			guild = "Forever Alone (No Guild)"
 	except Exception as e:
 		return "Failed to fetch data. Error: {}.".format(e)
-		
-		
+
 	return "\x02{}\x02, \x02{}\x02 is a level {}, {} {} {}. They have \x02{}\x02 kills, \x02{}\x02 achievement points, and they are a part of \x02{}\x02. Their guild is \x02{}\x02.".format(name, realm, level, gender, race, clas, kills, ach_points, battlegroup, guild)
 
 @hook.command
@@ -76,9 +70,9 @@ def pvp(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
-		if location == us:
+		if location == 'us':
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=pvp&locale=en_US&apikey={}".format(realm, name, api_key))
-		elif location == eu:
+		elif location == 'eu':
 			data = http.get_json("https://eu.api.battle.net/wow/character/{}/{}?fields=pvp&locale=en_US&apikey={}".format(realm, name, api_key))
 	except:
 		return "Something went wrong. Error {}".format(e)
