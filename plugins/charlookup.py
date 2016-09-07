@@ -23,6 +23,7 @@ def char(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
+		location = location.lower()
 		if location == 'us':
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=guild&locale=en_US&apikey={}".format(realm, name, api_key))
 		elif location == 'eu':
@@ -70,11 +71,12 @@ def pvp(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
+		location = location.lower()
 		if location == 'us':
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=pvp&locale=en_US&apikey={}".format(realm, name, api_key))
 		elif location == 'eu':
 			data = http.get_json("https://eu.api.battle.net/wow/character/{}/{}?fields=pvp&locale=en_US&apikey={}".format(realm, name, api_key))
-	except:
+	except Exception as e:
 		return "Something went wrong. Error {}".format(e)
 	try:
 		twos_rating = data["pvp"]["brackets"]["ARENA_BRACKET_2v2"]["rating"]
