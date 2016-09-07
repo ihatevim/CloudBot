@@ -9,7 +9,7 @@ def char(text, bot):
 	classes = ["Warrior", "Paladin", "Hunter", "Rogue", "Priest", "Death Knight", "Shaman", "Mage", "Warlock", "Monk", "Druid", "Demon Hunter"]
 	races = ["Human", "Orc", "Dwarf", "Night Elf", "Undead", "Tauren", "Gnome", "Troll", "Goblin", "Blood Elf", "Draenei"]
 	genders = ["Male", "Female"]
-	factions = ["Alliance", "Horde"]
+	factions = ["Alliance", "Horde", "Neutral"]
 	try:
 		api_key = bot.config.get("api_keys", {}).get("wow", None)
 	except:
@@ -40,7 +40,7 @@ def char(text, bot):
 		ach_points = data["achievementPoints"]
 		level = data["level"]
 		race_n = data["race"]
-		if race_n is 25: race = "Pandaren"
+		if race_n is 25 or 26: race = "Pandaren"
 		else: race = races[(race_n - 1)]
 		faction = factions[(data["faction"])]
 		kills = data["totalHonorableKills"]
