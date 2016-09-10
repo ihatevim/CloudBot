@@ -26,9 +26,9 @@ def char(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
+		name = urllib.parse.quote(name)
 		location = location.lower()
 		if location == 'us':
-			name = urllib.parse.quote(name)
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=guild&locale=en_US&apikey={}".format(realm, name, api_key))
 		elif location == 'eu':
 			print("location is eu")
@@ -77,6 +77,7 @@ def pvp(text, bot):
 	except:
 		return "You need to specify a realm."
 	try:
+		name = urllib.parse.quote(name)
 		location = location.lower()
 		if location == 'us':
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=pvp&locale=en_US&apikey={}".format(realm, name, api_key))
