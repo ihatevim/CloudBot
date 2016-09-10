@@ -41,19 +41,22 @@ def get_video_description(video_id):
     length = isodate.parse_duration(content_details['duration'])
     out += ' - length \x02{}\x02'.format(timeformat.format_time(int(length.total_seconds()), simple=True))
     try:
-        total_votes = float(statistics['likeCount']) + float(statistics['dislikeCount'])
-    except:
-        total_votes = 0
-        pass
+        total_votes = (float(statistics['likeCount']) +
+                       float(statistics['dislikeCount']))
+    except KeyError:
+        total_votes = "N/A"
 
     if total_votes != 0:
         # format
-        likes = pluralize(int(statistics['likeCount']), "like")
-        dislikes = pluralize(int(statistics['dislikeCount']), "dislike")
+        try:
+            likes = pluralize(int(statistics['likeCount']), "like")
+            dislikes = pluralize(int(statistics['dislikeCount']), "dislike")
+            percent = 100 * float(statistics['likeCount']) / total_votes
 
-        percent = 100 * float(statistics['likeCount']) / total_votes
-        out += ' - {}, {} (\x02{:.1f}\x02%)'.format(likes,
-                                                    dislikes, percent)
+            out += ' - {}, {} (\x02{:.1f}\x02%)'.format(likes,
+                                                        dislikes, percent)
+        except (KeyError, ValueError):
+            out += ' - {}, {}, (\x02{})'.format('N/A', 'N/A', 'N/A')
 
     if 'viewCount' in statistics:
         views = int(statistics['viewCount'])
@@ -98,7 +101,7 @@ def youtube(text):
 
     if json['pageInfo']['totalResults'] == 0:
         return 'No results found.'
-    
+
     video_id = json['items'][0]['id']['videoId']
 
     return get_video_description(video_id) + " - " + video_url % video_id
