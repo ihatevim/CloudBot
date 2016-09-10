@@ -1,4 +1,6 @@
 import re
+import urllib.request
+from bs4 import BeautifulSoup
 from cloudbot.util import http, web
 from cloudbot import hook
 from urllib.parse import urlencode
@@ -40,7 +42,8 @@ def char(text, bot):
 		ach_points = data["achievementPoints"]
 		level = data["level"]
 		race_n = data["race"]
-		if race_n is 25 or 26: race = "Pandaren"
+		if race_n == 25: race = "Pandaren"
+		elif race_n == 26: race = "Pandaren"
 		else: race = races[(race_n - 1)]
 		faction = factions[(data["faction"])]
 		kills = data["totalHonorableKills"]
@@ -97,3 +100,13 @@ def pvp(text, bot):
 	except Exception as e:
 		return "Error: {}".format(e)
 	return "2v2s: {} \x02\x033 {} \x03\x02-\x02\x034 {} \x03\x02 | 3v3s: {} \x02\x033 {} \x03\x02-\x02\x034 {} \x03\x02 | RBGs: {} \x02\x033 {} \x03\x02-\x02\x034 {} \x03\x02 | Skrims: {} \x02\x033 {} \x03\x02-\x02\x034 {} \x03\x02".format(twos_rating, twos_won, twos_lost, threes_rating, threes_won, threes_lost, rbg_rating, rbg_won, rbg_lost, skrims_rating, skrims_won, skrims_lost)
+
+"""@hook.command('idtest')
+def abilityid(text):
+	headers = {'User-Agent' : 'Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.118 Safari/537a'} 
+	url = 'http://www.wowhead.com/search?q={}'.format(text)
+	request = urllib.request.Request(url, None, headers)
+	page = urllib.request.urlopen(request).read()
+	soup = BeautifulSoup(page, 'lxml')
+	#soup = soup.find('div', attrs={'id': ('tab-specialization')})
+	print(soup)"""
