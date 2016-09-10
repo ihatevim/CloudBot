@@ -1,5 +1,6 @@
+import traceback
 import re
-import urllib.request
+import urllib.parse
 from bs4 import BeautifulSoup
 from cloudbot.util import http, web
 from cloudbot import hook
@@ -27,6 +28,7 @@ def char(text, bot):
 	try:
 		location = location.lower()
 		if location == 'us':
+			name = urllib.parse.quote(name)
 			data = http.get_json("https://us.api.battle.net/wow/character/{}/{}?fields=guild&locale=en_US&apikey={}".format(realm, name, api_key))
 		elif location == 'eu':
 			print("location is eu")
@@ -34,6 +36,7 @@ def char(text, bot):
 		else:
 			return "I didn't understand that location. Use US, or EU."
 	except Exception as e:
+		traceback.print_exc()
 		return e
 	try:
 		battlegroup = data["battlegroup"]
